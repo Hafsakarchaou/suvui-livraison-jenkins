@@ -1,22 +1,32 @@
-pipeline{
-  agent any
-  environment {
-  PATH = "/opt/maven/bin:$PATH"
-  JAVA_HOME = "/usr/lib/jvm/java-1.11.0-openjdk-amd64"
-  }
-  stages{
-    stage('Build'){
-      steps{
-        sh "mvn clean install"
+pipeline {
+    agent any
+
+    tools {
+     maven 'Maven3'
+    }
+  
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Hafsakarchaou/suvui-livraison-jenkins.git']]])
+            }
         }
+        
+       stage ('Build') {
+         steps {
+              sh 'mvn clean install -f pom.xml'
+            }
         }
-    stage('SonarQube analysis'){
-      steps{
-        withSonarQubeEnv('sonarqube'){
-          sh "mvn sonar:sonar"
-          }
-          }
-          }
-          }        
-          }
-      
+        
+        stage ('Code Quality') {
+        steps {
+            withSonarQubeEnv('sonar-server') {
+            sh 'mvn -f pom.xml sonar:sonar'
+            }
+      }
+    }
+    
+            
+        
+    }
+}
